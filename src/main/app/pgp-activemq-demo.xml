@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:encryption="http://www.mulesoft.org/schema/mule/encryption" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/encryption http://www.mulesoft.org/schema/mule/encryption/current/mule-encryption.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <encryption:config name="Encryption" defaultEncrypter="PGP_ENCRYPTER" doc:name="Encryption">
+        <encryption:pgp-encrypter-config publicKeyRingFileName="src/main/resources/8C344D1D935E51901660EECA54771BE646C8087D.gpg" secretKeyRingFileName="src/main/resources/secret-key-property.gpg" secretAliasId="-3785997322159464994" secretPassphrase="123456789" principal="Sadik &lt;sadik.ali@mahindracomviva.com&gt;"/>
+    </encryption:config>
+    <jms:activemq-connector name="Active_MQ" username="admin" password="admin" brokerURL="tcp://localhost:61716" validateConnections="true" doc:name="Active MQ"/>
+    <flow name="pgp-activemq-demoFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/pgp-activemq-demo" allowedMethods="POST" doc:name="HTTP"/>
+        <encryption:encrypt config-ref="Encryption" using="PGP_ENCRYPTER" doc:name="Encryption"/>
+        <jms:outbound-endpoint queue="pgp-active-mp-demo" connector-ref="Active_MQ" doc:name="JMS"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <logger message="this is message already sent to activemq" level="INFO" doc:name="Logger"/>
+        <set-payload value="Message sent to activeMq #[payload]" doc:name="Set Payload"/>
+    </flow>
+    <flow name="pgp-activemq-demoFlow1">
+        <jms:inbound-endpoint queue="pgp-active-mp-demo" connector-ref="Active_MQ" doc:name="JMS"/>
+        <encryption:decrypt config-ref="Encryption" doc:name="Encryption"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <logger message="Final Demo message #[payload]" level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>
